@@ -1,6 +1,6 @@
 # Card Run: Crash — Reference Prototype
 
-A single self-contained `index.html` (vanilla HTML/CSS/JS, no build step, no dependencies beyond Google Fonts) implementing the Card Run "Crash" game, with its payout curve wired directly to the approved production mathematics in **[`DOCUMENT-09-MATH-SPEC.md`](./DOCUMENT-09-MATH-SPEC.md)** ("09 — Card Run: Crash. Final Mathematical Production Specification").
+A single self-contained `index.html` (vanilla HTML/CSS/JS, no build step, no dependencies beyond Google Fonts) implementing the Card Run "Crash" game, with its payout curve wired directly to the approved production mathematics in **[`09-final-production-specification.md`](./09-final-production-specification.md)** ("09 — Card Run: Crash. Final Mathematical Production Specification").
 
 This is a **mathematical/reference tool, not production code** — see the parent project ("Card Run - Crash Math Simulator") for the full derivation history (Documents 01–09).
 
