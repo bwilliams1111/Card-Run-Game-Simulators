@@ -1,0 +1,617 @@
+<title>Crash Deal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+  :root{
+    --bg:#000000;
+    --surface:#141318;
+    --surface-2:#1d1c23;
+    --line:#2a2a32;
+    --text:#f4f3f0;
+    --muted:#83828d;
+    --accent:#f2b73c;       /* ammo / brass */
+    --accent-dim:#6b5a24;
+    --danger:#ff4f5e;
+    --success:#33d17a;
+    --success-dim:#12321f;
+    --suit-diamonds:#4da6ff; /* blue   -- contrast-checked against #000 */
+    --suit-hearts:#ff4d5e;   /* red    -- contrast-checked against #000 */
+    --suit-clubs:#3ddc84;    /* green  -- contrast-checked against #000 */
+    --suit-spades:#ffffff;   /* white  -- contrast-checked against #000 */
+  }
+
+  *{ box-sizing:border-box; }
+
+  body{ background:var(--bg); color:var(--text); font-family:'IBM Plex Sans', system-ui, sans-serif; }
+
+  .stage{
+    min-height:100vh; min-height:100dvh;
+    display:flex; justify-content:center;
+    background:var(--bg);
+  }
+
+  .frame{
+    position:relative;
+    width:100%; max-width:420px;
+    min-height:100vh; min-height:100dvh;
+    display:flex; flex-direction:column;
+    overflow:hidden;
+    background:var(--bg);
+    padding-left:16px; padding-right:16px;
+  }
+
+  /* ---------- Multiplier HUD ---------- */
+  .hud-multiplier{
+    margin-top:20vh; margin-top:20dvh;
+    display:flex; gap:8px;
+    justify-content:center;
+  }
+  .pill{
+    flex:1 1 0;
+    min-width:0;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:10px 4px;
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:0.02em;
+    color:var(--text);
+    transition:background 150ms ease, color 150ms ease, border-color 150ms ease;
+  }
+  .pill:first-child{
+    background:var(--accent-dim);
+    border-color:var(--accent);
+    color:var(--accent);
+  }
+  .pill.placeholder{ color:var(--muted); border-color:var(--line); background:var(--surface); }
+
+  /* ---------- AMMO HUD ---------- */
+  .hud-ammo{
+    margin-top:20px;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+  }
+  .ammo-label{
+    font-family:'Bebas Neue', 'IBM Plex Sans', sans-serif;
+    font-size:13px; letter-spacing:0.22em; color:var(--muted);
+  }
+  .ammo-value{
+    font-family:'Bebas Neue', 'IBM Plex Sans', sans-serif;
+    font-size:34px; line-height:1; color:var(--accent);
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* ---------- Offer HUD ---------- */
+  .hud-offer{
+    margin-top:20px;
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600; font-size:14px; letter-spacing:0.08em;
+    color:var(--muted);
+  }
+  .hud-offer.active{ color:var(--success); }
+
+  /* ---------- Result banner (bust / cash-out summary) ---------- */
+  .result-banner{
+    margin-top:10px;
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px; letter-spacing:0.04em;
+    color:var(--muted);
+    min-height:16px;
+  }
+  .result-banner.win{ color:var(--success); }
+  .result-banner.loss{ color:var(--danger); }
+
+  /* ---------- Card lane ---------- */
+  .card-lane{
+    margin-top:30px;
+    display:flex; justify-content:center;
+    overflow:hidden;
+  }
+  .card-track{
+    display:flex; gap:8px;
+    will-change:transform;
+  }
+  .playing-card{
+    flex:0 0 60px;
+    height:86px;
+    border-radius:8px;
+    background:#0c0c0f;
+    border:1px solid var(--line);
+    box-shadow:0 6px 14px rgba(0,0,0,0.5);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:2px;
+    font-family:'IBM Plex Mono', monospace;
+    opacity:1; transform:translateX(0) scale(1);
+    transition:opacity 260ms ease, transform 260ms ease;
+  }
+  .playing-card.enter{ opacity:0; transform:translateX(18px) scale(0.94); }
+  .playing-card .rank{ font-size:24px; font-weight:700; line-height:1; }  /* unchanged */
+  .playing-card .suit{ font-size:33.6px; line-height:1; }                /* 24px * 1.4 */
+  /* Suit + its attached rank share one color per suit (set on the card
+     container, inherited by both the .rank and .suit spans below). */
+  .playing-card.suit-D{ color:var(--suit-diamonds); }
+  .playing-card.suit-H{ color:var(--suit-hearts); }
+  .playing-card.suit-C{ color:var(--suit-clubs); }
+  .playing-card.suit-S{ color:var(--suit-spades); }
+
+  .spacer{ flex:1 1 auto; }
+
+  /* ---------- Bottom controls ---------- */
+  .bottom-controls{
+    margin-bottom:20px;
+    display:flex; justify-content:center;
+  }
+  .cashout-btn, .play-again-btn{
+    appearance:none; border:none; cursor:pointer;
+    font-family:'Bebas Neue','IBM Plex Sans', sans-serif;
+    font-size:19px; letter-spacing:0.06em;
+    border-radius:999px;
+    padding:16px 28px;
+    min-width:230px;
+    font-variant-numeric:tabular-nums;
+  }
+  .cashout-btn{
+    background:var(--surface);
+    color:var(--muted);
+    border:1px solid var(--line);
+  }
+  .cashout-btn:not(:disabled){
+    background:var(--success-dim);
+    color:var(--success);
+    border-color:var(--success);
+  }
+  .cashout-btn:disabled{ cursor:not-allowed; }
+  .play-again-btn{
+    background:var(--accent);
+    color:#1a1305;
+  }
+
+  /* ---------- Bust toast ---------- */
+  .bust-toast{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,0.6);
+    pointer-events:none;
+  }
+  .bust-toast-card{
+    text-align:center;
+    animation:bustPop 3000ms ease forwards;
+  }
+  .bust-title{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:64px; letter-spacing:0.08em;
+    color:var(--danger);
+    text-shadow:0 0 30px rgba(255,79,94,0.55);
+  }
+  .bust-reason{
+    margin-top:6px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px; letter-spacing:0.08em;
+    color:var(--muted);
+    text-transform:uppercase;
+  }
+  @keyframes bustPop{
+    0%{ opacity:0; transform:scale(0.85); }
+    8%{ opacity:1; transform:scale(1.04); }
+    14%{ transform:scale(1); }
+    88%{ opacity:1; }
+    100%{ opacity:0; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .playing-card, .bust-toast-card{ transition:none; animation:none; }
+  }
+</style>
+
+<div class="stage">
+  <div class="frame">
+    <div class="hud-multiplier" id="multiplierHud">
+      <div class="pill placeholder" id="pill0">&mdash;</div>
+      <div class="pill placeholder" id="pill1">&mdash;</div>
+      <div class="pill placeholder" id="pill2">&mdash;</div>
+      <div class="pill placeholder" id="pill3">&mdash;</div>
+    </div>
+
+    <div class="hud-ammo">
+      <div class="ammo-label">AMMO</div>
+      <div class="ammo-value" id="ammoValue">&mdash;</div>
+    </div>
+
+    <div class="hud-offer" id="offerHud">NO OFFER</div>
+    <div class="result-banner" id="resultBanner"></div>
+
+    <div class="card-lane">
+      <div class="card-track" id="cardTrack"></div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="bottom-controls">
+      <button class="cashout-btn" id="cashOutBtn" disabled>NO OFFER</button>
+      <button class="play-again-btn" id="playAgainBtn" hidden>PLAY AGAIN</button>
+    </div>
+
+    <div class="bust-toast" id="bustToast" hidden>
+      <div class="bust-toast-card">
+        <div class="bust-title">BUST</div>
+        <div class="bust-reason" id="bustReasonText"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // =========================================================================
+  // DECK — deck creation, shuffling, card model
+  // =========================================================================
+  const SUITS = ['C','D','H','S'];
+  const SUIT_SYMBOL = { C:'♣', D:'♦', H:'♥', S:'♠' };
+  const SUIT_COLOR  = { C:'black', D:'red', H:'red', S:'black' };
+  const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+
+  function buildShoe(){
+    const shoe = [];
+    for (let deckNum = 0; deckNum < 2; deckNum++){
+      for (const suit of SUITS){
+        for (const rank of RANKS){
+          shoe.push({ rank, suit, color: SUIT_COLOR[suit], deckNum });
+        }
+      }
+    }
+    return shoe;
+  }
+
+  function shuffle(arr){
+    for (let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  // =========================================================================
+  // MATH ENGINE — isolated & swappable. PLACEHOLDER MATH ONLY.
+  // Starting multiplier 1.05x, +1.14x per card dealt (per project rules §3).
+  // This formula is explicitly a placeholder pending the derived Crash
+  // mathematics — nothing in the Game Engine or UI depends on its shape,
+  // only on multiplierForCard(n) / ammoForMultiplier(mult) existing.
+  // =========================================================================
+  const MathEngine = {
+    DENOMINATION: 10.00,
+    START_MULTIPLIER: 1.05,
+    STEP: 1.14,
+    multiplierForCard(n){ // n = 1-based cumulative card index for the whole run
+      const raw = this.START_MULTIPLIER + (n - 1) * this.STEP;
+      return Math.round(raw * 100) / 100; // avoid float drift, e.g. 3.3299999999999996
+    },
+    ammoForMultiplier(mult){
+      return Math.round(mult * this.DENOMINATION * 100) / 100;
+    },
+    offerForMultiplier(mult){
+      return this.ammoForMultiplier(mult);
+    }
+  };
+
+  function fmtMoney(n){ return '$' + n.toFixed(2); }
+  function fmtMult(n){ return n.toFixed(2) + 'x'; }
+
+  // =========================================================================
+  // GAME ENGINE — deck lifecycle, dealing, bust detection, state machine.
+  // States: READY | NO_OFFER | OFFER_AVAILABLE | BUST | CASHED_OUT
+  // =========================================================================
+  const VISIBLE_CARD_COUNT = 4; // rolling display window size (updated per explicit request, was 5)
+
+  function createGameEngine({ onChange }){
+    let state = null;
+    let dealTimer = null;
+    let toastTimer = null;
+
+    function freshState(){
+      return {
+        status: 'READY',
+        shoe: shuffle(buildShoe()),
+        deckGeneration: 1,
+        cardHistory: [],      // authoritative — never trimmed for the rolling display
+        cardIndex: 0,         // continuous across deck reshuffles
+        currentMultiplier: null,
+        ammo: null,
+        offerActive: false,
+        offerValue: null,
+        bustReason: null,
+        payout: null,
+        toastVisible: false,
+        canPlayAgain: false,
+      };
+    }
+
+    function emit(){
+      onChange(Object.assign({}, state, { visibleWindow: state.cardHistory.slice(-VISIBLE_CARD_COUNT) }));
+    }
+
+    function scheduleNextDeal(){
+      clearTimeout(dealTimer);
+      dealTimer = setTimeout(dealNextCard, 1500); // deal pace — per explicit request (was 1000ms)
+    }
+
+    function dealNextCard(){
+      if (state.shoe.length === 0){
+        // Deck exhaustion without a bust: shuffle a fresh 104-card shoe and
+        // continue. Card-index / multiplier progression AND black-suit
+        // bust-adjacency both carry across this boundary uninterrupted
+        // (confirmed with design owner — project doc 01-pre-coding-analysis.md, Q1/Q2).
+        state.shoe = shuffle(buildShoe());
+        state.deckGeneration += 1;
+      }
+
+      const card = state.shoe.pop();
+      const previousCard = state.cardHistory[state.cardHistory.length - 1] || null;
+      state.cardIndex += 1;
+      state.cardHistory.push(card);
+
+      const mult = MathEngine.multiplierForCard(state.cardIndex);
+      state.currentMultiplier = mult;
+      state.ammo = MathEngine.ammoForMultiplier(mult);
+
+      if (state.cardIndex === 1){
+        if (card.rank === 'A' && card.suit === 'S'){
+          bust('first-card-ace-of-spades');
+          return;
+        }
+        state.status = 'NO_OFFER';
+        state.offerActive = false;
+        state.offerValue = null;
+        emit();
+        scheduleNextDeal();
+        return;
+      }
+
+      if (previousCard && card.color === 'black' && previousCard.color === 'black' && card.suit === previousCard.suit){
+        bust(card.suit === 'C' ? 'consecutive-clubs' : 'consecutive-spades');
+        return;
+      }
+
+      if (card.color === 'red'){
+        state.status = 'OFFER_AVAILABLE';
+        state.offerActive = true;
+        state.offerValue = MathEngine.offerForMultiplier(mult);
+      } else {
+        state.status = 'NO_OFFER';
+        state.offerActive = false;
+        state.offerValue = null;
+      }
+      emit();
+      scheduleNextDeal();
+    }
+
+    function bust(reason){
+      clearTimeout(dealTimer);
+      state.status = 'BUST';
+      state.bustReason = reason;
+      state.offerActive = false;
+      state.offerValue = null;
+      state.toastVisible = true;
+      state.canPlayAgain = false;
+      emit();
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function(){
+        state.toastVisible = false;
+        state.canPlayAgain = true;
+        emit();
+      }, 3000);
+    }
+
+    function cashOut(){
+      if (state.status !== 'OFFER_AVAILABLE') return;
+      clearTimeout(dealTimer);
+      state.status = 'CASHED_OUT';
+      state.payout = state.offerValue;
+      state.canPlayAgain = true;
+      emit();
+    }
+
+    function playAgain(){
+      clearTimeout(dealTimer);
+      clearTimeout(toastTimer);
+      state = freshState();
+      emit();
+      scheduleNextDeal(); // dealing auto-starts — confirmed with design owner (Q4)
+    }
+
+    function start(){
+      state = freshState();
+      emit();
+      scheduleNextDeal();
+    }
+
+    function snapshot(){
+      return state ? JSON.parse(JSON.stringify(state)) : null;
+    }
+
+    function restore(saved){
+      if (!saved){ start(); return; }
+      state = saved;
+      emit();
+      if (state.status === 'NO_OFFER' || state.status === 'OFFER_AVAILABLE'){
+        scheduleNextDeal();
+      } else if (state.status === 'BUST' && state.toastVisible){
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function(){
+          state.toastVisible = false;
+          state.canPlayAgain = true;
+          emit();
+        }, 3000);
+      }
+    }
+
+    return { start, cashOut, playAgain, snapshot, restore, getState: function(){ return state; } };
+  }
+
+  // =========================================================================
+  // UI — HUDs, card lane rolling window, buttons, bust toast.
+  // =========================================================================
+  const multiplierHud = document.getElementById('multiplierHud');
+  const pills = [0,1,2,3].map(function(i){ return document.getElementById('pill' + i); });
+  const ammoValueEl = document.getElementById('ammoValue');
+  const offerHudEl = document.getElementById('offerHud');
+  const resultBannerEl = document.getElementById('resultBanner');
+  const cardTrackEl = document.getElementById('cardTrack');
+  const cashOutBtn = document.getElementById('cashOutBtn');
+  const playAgainBtn = document.getElementById('playAgainBtn');
+  const bustToastEl = document.getElementById('bustToast');
+  const bustReasonTextEl = document.getElementById('bustReasonText');
+
+  const CARD_WIDTH = 60, CARD_GAP = 8;
+  const CARD_STEP = CARD_WIDTH + CARD_GAP;
+  let renderedCardIndex = 0;
+
+  const BUST_REASON_LABEL = {
+    'first-card-ace-of-spades': 'Ace of Spades',
+    'consecutive-clubs': 'Consecutive Clubs',
+    'consecutive-spades': 'Consecutive Spades',
+  };
+
+  function renderMultiplierHud(state){
+    const n = state.cardIndex;
+    for (let i = 0; i < 4; i++){
+      const pill = pills[i];
+      if (n === 0){
+        pill.textContent = '—';
+        pill.classList.add('placeholder');
+      } else {
+        pill.textContent = fmtMult(MathEngine.multiplierForCard(n + i));
+        pill.classList.remove('placeholder');
+      }
+    }
+  }
+
+  function renderAmmo(state){
+    ammoValueEl.textContent = state.cardIndex === 0 ? '—' : fmtMoney(state.ammo);
+  }
+
+  function renderOffer(state){
+    if (state.offerActive){
+      offerHudEl.textContent = 'OFFER ' + fmtMoney(state.offerValue);
+      offerHudEl.classList.add('active');
+    } else {
+      offerHudEl.textContent = 'NO OFFER';
+      offerHudEl.classList.remove('active');
+    }
+  }
+
+  function renderResultBanner(state){
+    if (state.status === 'CASHED_OUT'){
+      resultBannerEl.textContent = 'CASHED OUT — ' + fmtMoney(state.payout);
+      resultBannerEl.className = 'result-banner win';
+    } else if (state.status === 'BUST' && !state.toastVisible){
+      resultBannerEl.textContent = 'BUSTED — ' + (BUST_REASON_LABEL[state.bustReason] || state.bustReason);
+      resultBannerEl.className = 'result-banner loss';
+    } else {
+      resultBannerEl.textContent = '';
+      resultBannerEl.className = 'result-banner';
+    }
+  }
+
+  function renderCard(state){
+    if (state.cardIndex === renderedCardIndex) return;
+    renderedCardIndex = state.cardIndex;
+    const card = state.cardHistory[state.cardHistory.length - 1];
+
+    const el = document.createElement('div');
+    el.className = 'playing-card suit-' + card.suit + ' enter';
+    el.innerHTML = '<span class="rank">' + card.rank + '</span><span class="suit">' + SUIT_SYMBOL[card.suit] + '</span>';
+    cardTrackEl.appendChild(el);
+
+    // Always play the new card's own fade/slide-in, regardless of whether
+    // the lane is also about to shift the whole row left.
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){ el.classList.remove('enter'); });
+    });
+
+    const overflowing = cardTrackEl.children.length > VISIBLE_CARD_COUNT;
+    if (overflowing){
+      requestAnimationFrame(function(){
+        cardTrackEl.style.transition = 'transform 350ms ease';
+        cardTrackEl.style.transform = 'translateX(-' + CARD_STEP + 'px)';
+      });
+      cardTrackEl.addEventListener('transitionend', function handler(){
+        cardTrackEl.removeEventListener('transitionend', handler);
+        if (cardTrackEl.firstElementChild) cardTrackEl.removeChild(cardTrackEl.firstElementChild);
+        cardTrackEl.style.transition = 'none';
+        cardTrackEl.style.transform = 'translateX(0)';
+      }, { once: true });
+    }
+  }
+
+  function renderCashOutButton(state){
+    const terminal = state.status === 'BUST' || state.status === 'CASHED_OUT';
+    if (terminal){
+      cashOutBtn.hidden = true;
+      playAgainBtn.hidden = !state.canPlayAgain;
+      return;
+    }
+    cashOutBtn.hidden = false;
+    playAgainBtn.hidden = true;
+    if (state.status === 'OFFER_AVAILABLE'){
+      cashOutBtn.disabled = false;
+      cashOutBtn.textContent = 'TAKE OFFER ' + fmtMoney(state.offerValue);
+    } else {
+      cashOutBtn.disabled = true;
+      cashOutBtn.textContent = 'NO OFFER';
+    }
+  }
+
+  function renderBustToast(state){
+    bustToastEl.hidden = !state.toastVisible;
+    if (state.toastVisible){
+      bustReasonTextEl.textContent = BUST_REASON_LABEL[state.bustReason] || state.bustReason || '';
+    }
+  }
+
+  function render(state){
+    if (state.cardIndex === 0 && state.status === 'READY'){
+      cardTrackEl.innerHTML = '';
+      renderedCardIndex = 0;
+    }
+    renderCard(state);
+    renderMultiplierHud(state);
+    renderAmmo(state);
+    renderOffer(state);
+    renderResultBanner(state);
+    renderCashOutButton(state);
+    renderBustToast(state);
+  }
+
+  const engine = createGameEngine({ onChange: render });
+  cashOutBtn.addEventListener('click', function(){ engine.cashOut(); });
+  playAgainBtn.addEventListener('click', function(){ engine.playAgain(); });
+
+  // ---- boot (with hot-reload state preservation across republishes) ----
+  function boot(data){
+    if (data && data.savedState){
+      engine.restore(data.savedState);
+    } else {
+      engine.start();
+    }
+  }
+
+  if (window.claude && window.claude.hot){
+    window.claude.hot.snapshot(function(){
+      return { savedState: engine.snapshot() };
+    });
+    if (window.claude.hot.ready){
+      window.claude.hot.ready(boot);
+    } else {
+      boot(window.claude.hot.data || {});
+    }
+  } else {
+    boot({});
+  }
+})();
+</script>

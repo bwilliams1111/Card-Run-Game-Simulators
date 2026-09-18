@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Card Run: Crash — Reference Prototype</title>
+<meta name="description" content="Reference prototype wired to the approved Document 09 production mathematics.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#121722; --panel2:#171e2c; --border:#232c3d;
+    --text:#e8ecf5; --muted:#8b94a8; --accent:#4fd1a5; --accent2:#f5c451;
+    --red:#ff5d6c; --black:#c9d3e6; --danger:#ff4d5e; --gold:#f5c451;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;}
+  body{min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 16px 60px;}
+  .wrap{width:100%; max-width:720px;}
+  h1{font-size:1.5rem; font-weight:800; margin:0 0 2px; letter-spacing:-0.02em;}
+  .subtitle{color:var(--muted); font-size:0.85rem; margin-bottom:20px;}
+  .card-panel, .settings-panel, .status-panel, .table-panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px; margin-bottom:16px;
+  }
+  .row{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .cards-row{display:flex; gap:10px; justify-content:center; min-height:118px; align-items:center; margin:10px 0 18px;}
+  .playing-card{
+    width:72px; height:100px; border-radius:10px; background:#fff; color:#111;
+    display:flex; flex-direction:column; justify-content:space-between; padding:8px;
+    font-weight:700; font-size:1.1rem; box-shadow:0 6px 18px rgba(0,0,0,.35);
+    border:1px solid rgba(0,0,0,.08); flex-shrink:0; opacity:0; transform:translateY(6px) scale(.94);
+    animation: cardIn .28s ease forwards;
+  }
+  @keyframes cardIn{ to{opacity:1; transform:translateY(0) scale(1);} }
+  .playing-card.placeholder{ background:transparent; border:2px dashed #2a3348; box-shadow:none; opacity:.5; animation:none; }
+  .playing-card .rank{font-size:1.15rem;}
+  .playing-card .suit-big{align-self:flex-end; font-size:1.8rem; line-height:1;}
+  .playing-card.red{color:var(--red);}
+  .playing-card.black{color:#1a1a1a;}
+  .placeholder-mark{margin:auto; color:#3a4257; font-size:1.5rem;}
+
+  .offer-box{text-align:center; padding:14px 0 6px;}
+  .offer-amount{font-family:'JetBrains Mono',monospace; font-size:2.4rem; font-weight:700; color:var(--accent2);}
+  .offer-label{color:var(--muted); font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px;}
+  .offer-amount.none{color:#3a4257; font-size:1.4rem;}
+
+  .btn{
+    appearance:none; border:none; border-radius:10px; padding:14px 20px; font-weight:700; font-size:1rem;
+    cursor:pointer; transition:transform .08s ease, opacity .15s ease; font-family:inherit;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.35; cursor:not-allowed;}
+  .btn-primary{background:var(--accent); color:#06231a; width:100%;}
+  .btn-secondary{background:var(--panel2); color:var(--text); border:1px solid var(--border);}
+  .btn-danger{background:var(--danger); color:#2a0006;}
+  .btn-small{padding:8px 14px; font-size:.85rem;}
+
+  .banner{text-align:center; font-weight:800; font-size:1.2rem; padding:10px; border-radius:10px; margin-bottom:14px;}
+  .banner.bust{background:rgba(255,77,94,.14); color:var(--danger); border:1px solid rgba(255,77,94,.35);}
+  .banner.cashed{background:rgba(79,209,165,.14); color:var(--accent); border:1px solid rgba(79,209,165,.35);}
+
+  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-top:10px;}
+  .stat{background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
+  .stat .k{color:var(--muted); font-size:.72rem; text-transform:uppercase; letter-spacing:.06em;}
+  .stat .v{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:1rem; margin-top:2px;}
+
+  .settings-panel h2, .table-panel h2{font-size:.95rem; margin:0 0 12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
+  .field{display:flex; flex-direction:column; gap:4px; flex:1; min-width:140px;}
+  .field label{font-size:.78rem; color:var(--muted);}
+  .field input{
+    background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:8px;
+    padding:9px 10px; font-family:'JetBrains Mono',monospace; font-size:.95rem;
+  }
+  .field-row{display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap;}
+  .feasibility-msg{font-size:.82rem; margin-top:6px; padding:8px 10px; border-radius:8px;}
+  .feasibility-msg.ok{background:rgba(79,209,165,.1); color:var(--accent);}
+  .feasibility-msg.bad{background:rgba(255,77,94,.1); color:var(--danger);}
+  .calib-note{font-size:.78rem; color:var(--muted); margin-top:10px; line-height:1.5;}
+
+  details summary{cursor:pointer; color:var(--muted); font-size:.85rem; padding:4px 0;}
+  .payout-table{width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:.82rem; margin-top:10px;}
+  .payout-table th, .payout-table td{padding:5px 8px; text-align:right; border-bottom:1px solid var(--border);}
+  .payout-table th{color:var(--muted); font-weight:600;}
+  .payout-table td:first-child, .payout-table th:first-child{text-align:left;}
+  .payout-table tbody tr:hover{background:var(--panel2);}
+  .badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:.7rem; font-weight:700; background:var(--panel2); color:var(--accent); margin-left:8px;}
+  .footer-note{color:var(--muted); font-size:.72rem; text-align:center; margin-top:8px; line-height:1.6;}
+  .spinner{display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.25); border-top-color:var(--accent2); border-radius:50%; animation:spin .7s linear infinite; vertical-align:-2px; margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Card Run: Crash — Reference Prototype</h1>
+  <div class="subtitle">Payout curve wired directly to <strong>Document&nbsp;09 — Final Mathematical Production Specification</strong>. Not production code.</div>
+
+  <div class="card-panel">
+    <div id="banner"></div>
+    <div class="cards-row" id="cardsRow"></div>
+    <div class="offer-box">
+      <div class="offer-label">Current Offer</div>
+      <div class="offer-amount none" id="offerAmount">—</div>
+    </div>
+    <div class="row" style="gap:10px;">
+      <button class="btn btn-primary" id="takeBtn" disabled>TAKE OFFER</button>
+      <button class="btn btn-secondary" id="playAgainBtn" style="display:none; width:100%;">PLAY AGAIN</button>
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><div class="k">Wager</div><div class="v">$10.00</div></div>
+      <div class="stat"><div class="k">Offers seen</div><div class="v" id="statOffers">0</div></div>
+      <div class="stat"><div class="k">Cards dealt</div><div class="v" id="statCards">0</div></div>
+      <div class="stat"><div class="k">Reshuffles</div><div class="v" id="statReshuffles">0</div></div>
+    </div>
+  </div>
+
+  <div class="settings-panel">
+    <h2>Configuration <span class="badge" id="calibStatusBadge">CALIBRATED</span></h2>
+    <div class="field-row">
+      <div class="field">
+        <label for="startingMult">Starting Multiplier (S)</label>
+        <input type="number" id="startingMult" value="1.05" step="0.01" min="0.01">
+      </div>
+      <div class="field">
+        <label for="targetRtp">Target RTP (R, %)</label>
+        <input type="number" id="targetRtp" value="90" step="0.1" min="0.1" max="100">
+      </div>
+      <div class="field" style="justify-content:flex-end;">
+        <label>&nbsp;</label>
+        <button class="btn btn-secondary btn-small" id="recalibrateBtn">Recalibrate</button>
+      </div>
+    </div>
+    <div id="feasibilityMsg" class="feasibility-msg ok">Feasible: R ≥ p₁·S (0.9000 ≥ 0.7792). Default configuration, production-verified.</div>
+    <div class="stat-grid" style="margin-top:12px;">
+      <div class="stat"><div class="k">c*</div><div class="v" id="statC">0.8112024617</div></div>
+      <div class="stat"><div class="k">Analytic RTP</div><div class="v" id="statRtp">90.0000%</div></div>
+      <div class="stat"><div class="k">First offer M₁</div><div class="v" id="statM1">$10.50</div></div>
+      <div class="stat"><div class="k">Cap reached at</div><div class="v" id="statCapJ">j = 33</div></div>
+    </div>
+    <div class="calib-note">
+      Feasibility bound: <strong>R ≥ p₁·S</strong>, where p₁ = 0.7420734269371773 (Document 09, Section 9) — a pure property of the two-deck card process, independent of any configuration. An infeasible configuration is rejected outright, never silently approximated. Recalibration (forward enumeration of p_j + Bellman backward induction + bisection for the single scalar c*) runs in a background worker so the page never freezes.
+    </div>
+  </div>
+
+  <div class="table-panel">
+    <details>
+      <summary>Production payout table (M₁ … cap) — click to expand</summary>
+      <table class="payout-table" id="payoutTableBody">
+        <thead><tr><th>Offer j</th><th>Payout M_j</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </details>
+  </div>
+
+  <div class="footer-note">
+    Deck: two 52-card decks (104 cards). Bust: club-after-club or spade-after-spade, or first card = Ace of Spades. Offer: any red card from card 2 onward. Reshuffle continues the same run — offer count and previous-card category are never reset. Perfect-information optimal-bot calibration is what the payout curve targets (Document 09, Section 4); this UI is played by a human, who therefore sees an RTP at or below the certified figure.
+  </div>
+</div>
+
+<script id="mathEngineSrc" type="text/plain">
+"use strict";
+var NC0 = 26, NS0 = 26, NR0 = 52;
+function key(nc, ns, nr, prev, j) { return nc + ',' + ns + ',' + nr + ',' + prev + ',' + j; }
+function parseKey(k) {
+  var parts = k.split(',');
+  return [parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2], 10), parts[3], parseInt(parts[4], 10)];
+}
+function addTo(map, k, v) { map.set(k, (map.get(k) || 0) + v); }
+
+function forwardPassFull(kMax) {
+  var distByK = new Map();
+  var d1 = new Map([
+    [key(NC0 - 1, NS0, NR0, 'C', 0), 26 / 104],
+    [key(NC0, NS0 - 1, NR0, 'S', 0), 24 / 104],
+    [key(NC0, NS0, NR0 - 1, 'R', 0), 52 / 104],
+  ]);
+  distByK.set(1, d1);
+  var pReachJ = new Map();
+  var dist = d1;
+  for (var k = 2; k <= kMax; k++) {
+    var newDist = new Map();
+    dist.forEach(function (p, sk) {
+      var parsed = parseKey(sk);
+      var nc = parsed[0], ns = parsed[1], nr = parsed[2], prev = parsed[3], j = parsed[4];
+      if (nc + ns + nr === 0) { nc = NC0; ns = NS0; nr = NR0; }
+      var rem = nc + ns + nr;
+      if (nc > 0) {
+        var pc = p * nc / rem;
+        if (prev !== 'C') addTo(newDist, key(nc - 1, ns, nr, 'C', j), pc);
+      }
+      if (ns > 0) {
+        var ps = p * ns / rem;
+        if (prev !== 'S') addTo(newDist, key(nc, ns - 1, nr, 'S', j), ps);
+      }
+      if (nr > 0) {
+        var pr = p * nr / rem;
+        var newJ = j + 1;
+        addTo(newDist, key(nc, ns, nr - 1, 'R', newJ), pr);
+        pReachJ.set(newJ, (pReachJ.get(newJ) || 0) + pr);
+      }
+    });
+    dist = newDist;
+    distByK.set(k, dist);
+    if (dist.size === 0) break;
+  }
+  return { distByK: distByK, pReachJ: pReachJ };
+}
+
+function solveBackward(kMax, M, distByK) {
+  var Vnext = new Map();
+  for (var k = kMax; k > 1; k--) {
+    var reachable = distByK.get(k - 1) || new Map();
+    var Vk = new Map();
+    reachable.forEach(function (_p, sk) {
+      var parsed = parseKey(sk);
+      var nc = parsed[0], ns = parsed[1], nr = parsed[2], prev = parsed[3], j = parsed[4];
+      if (nc + ns + nr === 0) { nc = NC0; ns = NS0; nr = NR0; }
+      var rem = nc + ns + nr;
+      var Mj1 = M.get(j + 1) || 0;
+      var ev = 0;
+      if (nc > 0) {
+        var valC = 0;
+        if (prev !== 'C') {
+          var c2n = nc - 1, c2s = ns, c2r = nr;
+          if (c2n + c2s + c2r === 0) { c2n = NC0; c2s = NS0; c2r = NR0; }
+          valC = Vnext.get(key(c2n, c2s, c2r, 'C', j)) || 0;
+        }
+        ev += (nc / rem) * valC;
+      }
+      if (ns > 0) {
+        var valS = 0;
+        if (prev !== 'S') {
+          var c2n2 = nc, c2s2 = ns - 1, c2r2 = nr;
+          if (c2n2 + c2s2 + c2r2 === 0) { c2n2 = NC0; c2s2 = NS0; c2r2 = NR0; }
+          valS = Vnext.get(key(c2n2, c2s2, c2r2, 'S', j)) || 0;
+        }
+        ev += (ns / rem) * valS;
+      }
+      if (nr > 0) {
+        var c2n3 = nc, c2s3 = ns, c2r3 = nr - 1;
+        if (c2n3 + c2s3 + c2r3 === 0) { c2n3 = NC0; c2s3 = NS0; c2r3 = NR0; }
+        var contVal = Vnext.get(key(c2n3, c2s3, c2r3, 'R', j + 1)) || 0;
+        var val = Math.max(Mj1, contVal);
+        ev += (nr / rem) * val;
+      }
+      Vk.set(sk, ev);
+    });
+    Vnext = Vk;
+  }
+  var pC1 = 26 / 104, pS1 = 24 / 104, pR1 = 52 / 104;
+  return pC1 * (Vnext.get(key(NC0 - 1, NS0, NR0, 'C', 0)) || 0)
+       + pS1 * (Vnext.get(key(NC0, NS0 - 1, NR0, 'S', 0)) || 0)
+       + pR1 * (Vnext.get(key(NC0, NS0, NR0 - 1, 'R', 0)) || 0);
+}
+
+function buildMFloored(S, R, W, C, c, pReachJ) {
+  var cap = C * W, targetEv = W * R, M1 = S * W;
+  var M = new Map([[1, M1]]);
+  pReachJ.forEach(function (p, j) {
+    if (j === 1 || p <= 0) return;
+    M.set(j, Math.max(M1, Math.min(c * targetEv / p, cap)));
+  });
+  return M;
+}
+
+function isFeasible(S, R, pReachJ) {
+  var p1 = pReachJ.get(1);
+  return R >= p1 * S - 1e-12;
+}
+
+function findCStarFloored(S, R, W, C, distByK, pReachJ, kMax, tol, maxIter, hi0) {
+  tol = tol || 1e-8; maxIter = maxIter || 60; hi0 = hi0 || 1.0;
+  var targetEv = W * R;
+  var p1 = pReachJ.get(1);
+  var floor = p1 * S * W;
+  if (floor > targetEv + 1e-9) return null;
+  function f(c) { return solveBackward(kMax, buildMFloored(S, R, W, C, c, pReachJ), distByK) - targetEv; }
+  var lo = 0, hi = hi0;
+  var flo = f(lo), fhi = f(hi);
+  var tries = 0;
+  while (fhi < 0 && tries < 50) { hi *= 2; fhi = f(hi); tries++; }
+  if (!(flo <= 1e-9 && fhi >= -1e-9)) return null;
+  var mid = (lo + hi) / 2;
+  for (var i = 0; i < maxIter; i++) {
+    mid = (lo + hi) / 2;
+    var fm = f(mid);
+    if (Math.abs(fm) < tol) break;
+    if (fm < 0) lo = mid; else hi = mid;
+  }
+  var M = buildMFloored(S, R, W, C, mid, pReachJ);
+  var V0 = solveBackward(kMax, M, distByK);
+  return { c: mid, M: M, V0: V0 };
+}
+
+function roundTableToCents(M) {
+  var out = new Map();
+  M.forEach(function (v, j) { out.set(j, Math.round(v * 100) / 100); });
+  return out;
+}
+
+function calibrate(S, R, W, C, kMax) {
+  W = W || 10; C = C || 1000; kMax = kMax || 100;
+  var fp = forwardPassFull(kMax);
+  var distByK = fp.distByK, pReachJ = fp.pReachJ;
+  if (!isFeasible(S, R, pReachJ)) {
+    return { feasible: false, p1: pReachJ.get(1) };
+  }
+  var result = findCStarFloored(S, R, W, C, distByK, pReachJ, kMax);
+  if (!result) return { feasible: false, p1: pReachJ.get(1) };
+  var MRounded = roundTableToCents(result.M);
+  var maxJ = 1;
+  MRounded.forEach(function (_v, j) { if (j > maxJ) maxJ = j; });
+  var capJ = null;
+  for (var j2 = 1; j2 <= maxJ; j2++) {
+    if (MRounded.get(j2) >= C * W - 1e-6) { capJ = j2; break; }
+  }
+  var tableArr = [];
+  for (var j3 = 1; j3 <= Math.min(maxJ, (capJ || maxJ) + 2); j3++) {
+    tableArr.push([j3, MRounded.get(j3)]);
+  }
+  return {
+    feasible: true, S: S, R: R, W: W, C: C,
+    c: result.c, V0: result.V0, RTP: result.V0 / W * 100,
+    p1: pReachJ.get(1), capJ: capJ, table: tableArr,
+  };
+}
+
+self.onmessage = function (e) {
+  var d = e.data;
+  var out = calibrate(d.S, d.R, d.W, d.C, d.kMax);
+  self.postMessage(out);
+};
+</script>
+
+<script>
+// ---------------------------------------------------------------------
+// Card Run: Crash — Reference Prototype
+// Game Engine + UI. The payout curve is never computed here inline; it
+// is always produced by the Math Engine (Document 09, Sections 3/6/8/9),
+// either the embedded default-configuration table (below, verified
+// against Document 09 Section 12 to full precision) or a freshly
+// recalibrated table from the background Web Worker.
+// ---------------------------------------------------------------------
+
+// --- Embedded default production table: Document 09, Section 12 ---
+// S = 1.05x, R = 90.000%, W = $10, C = 1000x. c* = 0.8112024616977749.
+const DEFAULT_CONFIG = { S: 1.05, R: 0.90, W: 10, C: 1000 };
+const DEFAULT_CALIBRATION = {
+  feasible: true, S: 1.05, R: 0.90, W: 10, C: 1000,
+  c: 0.8112024616977749, V0: 9.000000000000009, RTP: 90.00000000000009,
+  p1: 0.7420734269371773, capJ: 33,
+  table: [
+    [1,10.50],[2,11.78],[3,14.12],[4,16.98],[5,20.45],[6,24.69],[7,29.88],[8,36.24],
+    [9,44.07],[10,53.73],[11,65.67],[12,80.49],[13,98.92],[14,121.93],[15,150.73],
+    [16,186.91],[17,232.51],[18,290.19],[19,363.43],[20,456.77],[21,576.21],[22,729.67],
+    [23,927.70],[24,1184.40],[25,1518.72],[26,1956.26],[27,2531.84],[28,3293.10],
+    [29,4305.66],[30,5660.48],[31,7484.64],[32,9956.99],[33,10000.00],[34,10000.00],[35,10000.00],
+  ],
+};
+
+let calibration = DEFAULT_CALIBRATION;
+let payoutMap = new Map(calibration.table);
+let capValue = calibration.C * calibration.W;
+
+function payoutForOffer(offerNum) {
+  if (payoutMap.has(offerNum)) return payoutMap.get(offerNum);
+  return capValue; // Section 7: monotonic then flat at the cap beyond the tabulated range
+}
+
+// --- Deck (Document 09, Section 1.1) ---
+const SUITS = ['C', 'S', 'H', 'D'];
+const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+function buildShoe() {
+  const shoe = [];
+  for (let d = 0; d < 2; d++) {
+    for (const s of SUITS) {
+      for (const r of RANKS) {
+        shoe.push({ rank: r, suit: s, category: s === 'C' ? 'C' : (s === 'S' ? 'S' : 'R') });
+      }
+    }
+  }
+  return shoe;
+}
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function suitSymbol(s) { return { C: '♣', S: '♠', H: '♥', D: '♦' }[s]; }
+function isRedSuit(s) { return s === 'H' || s === 'D'; }
+
+// --- Game Engine (Document 09, Section 19 "Runtime") ---
+function createGameEngine() {
+  let shoe = [], prev = null, j = 0, cardsDealt = 0, reshuffles = 0;
+  let status = 'READY', history = [], currentOffer = null, lastPayout = null, bustReason = null;
+  let timer = null;
+  const DEAL_INTERVAL_MS = 900;
+
+  function freshShoe() { shoe = shuffle(buildShoe()); }
+
+  function dealNext() {
+    if (shoe.length === 0) { freshShoe(); reshuffles++; } // reshuffle: only composition resets (Section 5)
+    const card = shoe.pop();
+    cardsDealt++;
+    history.push(card);
+    if (cardsDealt === 1) {
+      if (card.rank === 'A' && card.suit === 'S') {
+        status = 'BUST'; bustReason = 'Ace of Spades on card 1'; currentOffer = null; return;
+      }
+      prev = card.category; status = 'NO_OFFER'; currentOffer = null; return;
+    }
+    if ((card.category === 'C' || card.category === 'S') && card.category === prev) {
+      status = 'BUST';
+      bustReason = card.category === 'C' ? 'Consecutive Clubs' : 'Consecutive Spades';
+      currentOffer = null;
+      return;
+    }
+    prev = card.category;
+    if (card.category === 'R') {
+      const offerNum = j + 1;
+      currentOffer = { number: offerNum, value: payoutForOffer(offerNum) };
+      status = 'OFFER_AVAILABLE';
+    } else {
+      currentOffer = null; status = 'NO_OFFER';
+    }
+  }
+
+  function scheduleNext() {
+    clearTimeout(timer);
+    timer = setTimeout(tick, DEAL_INTERVAL_MS);
+  }
+
+  function tick() {
+    if (status === 'OFFER_AVAILABLE') j++; // declined by the clock: offer count increments (Section 5)
+    dealNext();
+    render();
+    if (status === 'OFFER_AVAILABLE' || status === 'NO_OFFER') scheduleNext();
+    else clearTimeout(timer);
+  }
+
+  function start() {
+    clearTimeout(timer);
+    shoe = []; prev = null; j = 0; cardsDealt = 0; reshuffles = 0;
+    history = []; currentOffer = null; lastPayout = null; bustReason = null;
+    status = 'DEALING';
+    freshShoe();
+    dealNext();
+    render();
+    if (status === 'OFFER_AVAILABLE' || status === 'NO_OFFER') scheduleNext();
+  }
+
+  function cashOut() {
+    if (status !== 'OFFER_AVAILABLE') return;
+    clearTimeout(timer);
+    lastPayout = currentOffer.value;
+    status = 'CASHED_OUT';
+    render();
+  }
+
+  function getState() {
+    return { status, currentOffer, history, cardsDealt, reshuffles, offersSeen: j, lastPayout, bustReason };
+  }
+
+  return { start, cashOut, getState };
+}
+
+// --- UI wiring ---
+const engine = createGameEngine();
+
+function renderCards(history) {
+  const row = document.getElementById('cardsRow');
+  row.innerHTML = '';
+  const last4 = history.slice(-4);
+  const placeholders = 4 - last4.length;
+  for (let i = 0; i < placeholders; i++) {
+    const el = document.createElement('div');
+    el.className = 'playing-card placeholder';
+    el.innerHTML = '<div class="placeholder-mark">—</div>';
+    row.appendChild(el);
+  }
+  for (const card of last4) {
+    const el = document.createElement('div');
+    const red = isRedSuit(card.suit);
+    el.className = 'playing-card ' + (red ? 'red' : 'black');
+    el.innerHTML = '<div class="rank">' + card.rank + '</div><div class="suit-big">' + suitSymbol(card.suit) + '</div>';
+    row.appendChild(el);
+  }
+}
+
+function render() {
+  const s = engine.getState();
+  renderCards(s.history);
+
+  const offerEl = document.getElementById('offerAmount');
+  const takeBtn = document.getElementById('takeBtn');
+  const playAgainBtn = document.getElementById('playAgainBtn');
+  const banner = document.getElementById('banner');
+
+  document.getElementById('statOffers').textContent = s.offersSeen;
+  document.getElementById('statCards').textContent = s.cardsDealt;
+  document.getElementById('statReshuffles').textContent = s.reshuffles;
+
+  banner.innerHTML = '';
+  takeBtn.style.display = 'block';
+  playAgainBtn.style.display = 'none';
+
+  if (s.status === 'OFFER_AVAILABLE') {
+    offerEl.textContent = '$' + s.currentOffer.value.toFixed(2);
+    offerEl.classList.remove('none');
+    takeBtn.disabled = false;
+  } else if (s.status === 'BUST') {
+    offerEl.textContent = '—';
+    offerEl.classList.add('none');
+    takeBtn.disabled = true;
+    takeBtn.style.display = 'none';
+    playAgainBtn.style.display = 'block';
+    banner.innerHTML = '<div class="banner bust">BUST — ' + s.bustReason + '</div>';
+  } else if (s.status === 'CASHED_OUT') {
+    offerEl.textContent = '$' + s.lastPayout.toFixed(2);
+    offerEl.classList.remove('none');
+    takeBtn.disabled = true;
+    takeBtn.style.display = 'none';
+    playAgainBtn.style.display = 'block';
+    banner.innerHTML = '<div class="banner cashed">CASHED OUT — $' + s.lastPayout.toFixed(2) + '</div>';
+  } else {
+    offerEl.textContent = 'NO OFFER';
+    offerEl.classList.add('none');
+    takeBtn.disabled = true;
+  }
+}
+
+document.getElementById('takeBtn').addEventListener('click', () => engine.cashOut());
+document.getElementById('playAgainBtn').addEventListener('click', () => engine.start());
+
+// --- Configuration / recalibration panel ---
+function renderCalibrationStats(calib) {
+  document.getElementById('statC').textContent = calib.c.toFixed(10);
+  document.getElementById('statRtp').textContent = calib.RTP.toFixed(4) + '%';
+  document.getElementById('statM1').textContent = '$' + calib.table[0][1].toFixed(2);
+  document.getElementById('statCapJ').textContent = calib.capJ ? ('j = ' + calib.capJ) : '—';
+
+  const tbody = document.querySelector('#payoutTableBody tbody');
+  tbody.innerHTML = '';
+  for (const [j, v] of calib.table) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + j + '</td><td>$' + v.toFixed(2) + '</td>';
+    tbody.appendChild(tr);
+  }
+}
+renderCalibrationStats(DEFAULT_CALIBRATION);
+
+function applyCalibration(calib, S, R) {
+  calibration = calib;
+  payoutMap = new Map(calib.table);
+  capValue = calib.C ? calib.C * calib.W : capValue;
+  renderCalibrationStats(calib);
+  const badge = document.getElementById('calibStatusBadge');
+  badge.textContent = 'CALIBRATED';
+  const msg = document.getElementById('feasibilityMsg');
+  msg.className = 'feasibility-msg ok';
+  msg.textContent = 'Feasible: R ≥ p₁·S (' + R.toFixed(4) + ' ≥ ' + (calib.p1 * S).toFixed(4) + '). Recalibrated from Document 09’s formula (Section 3), c* re-solved by bisection.';
+}
+
+function showInfeasible(S, R, p1) {
+  const badge = document.getElementById('calibStatusBadge');
+  badge.textContent = 'REJECTED';
+  const msg = document.getElementById('feasibilityMsg');
+  msg.className = 'feasibility-msg bad';
+  msg.textContent = 'INFEASIBLE: R ≥ p₁·S fails (' + R.toFixed(4) + ' < ' + (p1 * S).toFixed(4) + '). Per Document 09 §9.4, this configuration is rejected outright — the previous valid payout table remains active.';
+}
+
+let worker = null;
+function getWorker() {
+  if (worker) return worker;
+  const src = document.getElementById('mathEngineSrc').textContent;
+  const blob = new Blob([src], { type: 'application/javascript' });
+  worker = new Worker(URL.createObjectURL(blob));
+  return worker;
+}
+
+document.getElementById('recalibrateBtn').addEventListener('click', () => {
+  const S = parseFloat(document.getElementById('startingMult').value);
+  const Rpct = parseFloat(document.getElementById('targetRtp').value);
+  const R = Rpct / 100;
+  const p1 = 0.7420734269371773; // Document 09, Section 9 — pure card-process constant
+  if (!(S > 0) || !(R > 0 && R <= 1)) {
+    showInfeasible(S, R, p1);
+    return;
+  }
+  const btn = document.getElementById('recalibrateBtn');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Solving…';
+  document.getElementById('calibStatusBadge').textContent = 'CALIBRATING…';
+
+  const w = getWorker();
+  w.onmessage = (e) => {
+    btn.disabled = false; btn.textContent = originalText;
+    const result = e.data;
+    if (!result.feasible) {
+      showInfeasible(S, R, result.p1 != null ? result.p1 : p1);
+      return;
+    }
+    applyCalibration(result, S, R);
+  };
+  w.postMessage({ S, R, W: 10, C: 1000, kMax: 100 });
+});
+
+// --- Start the first run automatically, per the original prototype's auto-start rule ---
+engine.start();
+</script>
+</body>
+</html>
